@@ -61,7 +61,7 @@ public sealed class BancontactSignatureVerifier
             return null;
         }
 
-        if (headerJson.Path != path)
+        if (!SignedPathMatches(headerJson.Path, path))
         {
             return null;
         }
@@ -101,4 +101,18 @@ public sealed class BancontactSignatureVerifier
             RequestId: headerJson.Jti,
             Path: headerJson.Path);
     }
+
+    /// <summary>
+    /// Whether the signed <c>path</c> claim names the endpoint that received the callback. The docs call the claim a
+    /// path, but Bancontact signs the callback URL the merchant registered (observed on a real preprod callback:
+    /// <c>https://host/bancontact/callback</c>), so a claim that is an absolute http(s) URL matches when its path
+    /// equals the received path. A plain path is compared as it is. The host is not compared: the application behind a
+    /// proxy cannot rely on the host it sees, and the path is what stops a callback for one endpoint being replayed
+    /// to another.
+    /// </summary>
+    private static bool SignedPathMatches(string claim, string path) =>
+        claim == path
+        || (Uri.TryCreate(claim, UriKind.Absolute, out var uri)
+            && (uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp)
+            && uri.AbsolutePath == path);
 }

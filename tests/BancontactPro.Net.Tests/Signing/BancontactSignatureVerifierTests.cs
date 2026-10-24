@@ -184,6 +184,56 @@ public class BancontactSignatureVerifierTests
         Assert.Equal(signature, encodedSignature);
     }
     [Theory]
+    [InlineData("https://shop.example/callback", "/callback", true)]
+    [InlineData("http://shop.example/callback", "/callback", true)]
+    [InlineData("https://shop.example/other", "/callback", false)]
+    [InlineData("ftp://shop.example/callback", "/callback", false)]
+    [InlineData("/callback", "/callback", true)]
+    public async Task VerifyAsync_PathClaimMayBeTheCallbackUrl(string claim, string receivedPath, bool expected)
+    {
+        using var key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        var jwks = new FakeJwksClient();
+        jwks.Add("bancontact-kid", key);
+        var verifier = new BancontactSignatureVerifier(jwks);
+
+        var signature = DetachedJwsSigner.Sign(SampleHeader(path: claim), "{}"u8, key);
+        var claims = await verifier.VerifyAsync(signature, "{}"u8.ToArray(), receivedPath);
+
+        Assert.Equal(expected, claims is not null);
+    }
+
+    [Fact]
+    public async Task VerifyAsync_RealPreprodCallback_Verifies()
+    {
+        // A callback captured from Bancontact's preprod (2026-10-24), verified with the public key from
+        // https://jwks.preprod.bancontact.net/ . Header form header..signature, a path claim that is the callback URL,
+        // and a signing input of header + "." + base64url(body).
+        const string signature =
+            "eyJjcml0IjpbImh0dHBzOi8vcGF5Y29uaXEuY29tL2lzcyIsImh0dHBzOi8vcGF5Y29uaXEuY29tL2lhdCIsImh0dHBzOi8vcGF5Y29uaXEuY29tL3N1YiIsImh0dHBzOi8vcGF5Y29uaXEuY29tL3BhdGgiLCJodHRwczovL3BheWNvbmlxLmNvbS9qdGkiXSwiaHR0cHM6Ly9wYXljb25pcS5jb20vaXNzIjoiUGF5Y29uaXEiLCJraWQiOiJjMzBmNDE0ZC04NTVmLTQ3OTEtOTc1ZC1mNmQ5ZjNkMjNlNDIiLCJodHRwczovL3BheWNvbmlxLmNvbS9pYXQiOiIyMDI2LTEwLTI0VDIyOjI1OjIzLjE4NVoiLCJ0eXAiOiJKT1NFK0pTT04iLCJodHRwczovL3BheWNvbmlxLmNvbS9zdWIiOiI3eGt5ZGpiYzluZ2dzeWtjZzVzaDBhYnMiLCJodHRwczovL3BheWNvbmlxLmNvbS9wYXRoIjoiaHR0cHM6Ly9iYW5jb250YWN0LXByZXByb2Qub3MtbGFuLmJlL2JhbmNvbnRhY3QvY2FsbGJhY2siLCJodHRwczovL3BheWNvbmlxLmNvbS9qdGkiOiI4MTM4OWVhNS1lZDRlLTQyZTMtODkwYy0xNjExMjkyZWNiOTYiLCJhbGciOiJFUzI1NiJ9..rqZVQYddn67bBOG7iej3jAYwMpT-6R3mI_Ar7npJwHfYLd8iGmKw62on21guVo9XGveBJBd8ApVGPTcZSr78Hg";
+        const string body =
+            """{"paymentId":"tx668ldrz9fgg4ararakc62r","currency":"EUR","amount":100,"createdAt":"2026-10-24T22:08:10.040086Z","status":"SUCCEEDED","debtor":{"iban":"************7034","name":"Axel Dewaele"},"description":"sample payment","expireAt":"2026-10-24T22:10:10.040086Z","succeededAt":"2026-10-24T22:08:28.514776Z"}""";
+
+        using var key = ECDsa.Create(new ECParameters
+        {
+            Curve = ECCurve.NamedCurves.nistP256,
+            Q = new ECPoint
+            {
+                X = Base64Url.DecodeFromChars("QXagknFz-0HTQGL-jISbuOdPFP4561SmbmHm2y14HEg"),
+                Y = Base64Url.DecodeFromChars("0XJYHdztagEf-qFj1_lnE1HAqp5LkMDskW4hbhnKiII"),
+            },
+        });
+        var jwks = new FakeJwksClient();
+        jwks.Add("c30f414d-855f-4791-975d-f6d9f3d23e42", key);
+        var verifier = new BancontactSignatureVerifier(jwks);
+
+        var claims = await verifier.VerifyAsync(signature, Encoding.UTF8.GetBytes(body), "/bancontact/callback");
+
+        Assert.NotNull(claims);
+        Assert.Equal("Payconiq", claims!.Issuer);
+        Assert.Equal("7xkydjbc9nggsykcg5sh0abs", claims.MerchantProfileId);
+        Assert.Equal("81389ea5-ed4e-42e3-890c-1611292ecb96", claims.RequestId);
+    }
+    [Theory]
     [InlineData("not-a-valid-signature-value")]
     [InlineData("one.two.three")]
     public async Task VerifyAsync_MalformedSignatureValue_ReturnsNull(string malformed)
