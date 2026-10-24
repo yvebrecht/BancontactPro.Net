@@ -2,9 +2,9 @@
 
 [![NuGet](https://img.shields.io/nuget/v/BancontactPro.Net.svg)](https://www.nuget.org/packages/BancontactPro.Net)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
-[![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4)](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)
+[![.NET 8+](https://img.shields.io/badge/.NET-8.0%20%7C%2010.0-512BD4)](https://dotnet.microsoft.com/en-us/download/dotnet)
 
-A strongly-typed **.NET 10** client library for [Bancontact Pro](https://docs.bancontactpro.com/)'s Merchant Payment/Refund/Reconciliation APIs, Belgium's Bancontact/Payconiq payment network. Targets Bancontact's in-store QR products — [On a Display](https://docs.bancontactpro.com/guides/instore/ondisplay052025v4), [On a Receipt](https://docs.bancontactpro.com/guides/instore/receipt052025v4), [Static QR](https://docs.bancontactpro.com/guides/instore/staticqr052025v4), and [Top Up](https://docs.bancontactpro.com/guides/online/topup052025v4) — where the merchant backend creates a payment, renders the resulting QR code (or deep-links to the payer's banking app), and confirms the outcome via a signed webhook with a polling fallback.
+A strongly-typed **.NET 8+** client library for [Bancontact Pro](https://docs.bancontactpro.com/)'s Merchant Payment/Refund/Reconciliation APIs, Belgium's Bancontact/Payconiq payment network. Targets Bancontact's in-store QR products — [On a Display](https://docs.bancontactpro.com/guides/instore/ondisplay052025v4), [On a Receipt](https://docs.bancontactpro.com/guides/instore/receipt052025v4), [Static QR](https://docs.bancontactpro.com/guides/instore/staticqr052025v4), and [Top Up](https://docs.bancontactpro.com/guides/online/topup052025v4) — where the merchant backend creates a payment, renders the resulting QR code (or deep-links to the payer's banking app), and confirms the outcome via a signed webhook with a polling fallback.
 
 > Bancontact's separate **Online Sales** product (a hosted-checkout/redirect flow more typical of
 > webshop checkouts) is marked by Bancontact as
@@ -75,7 +75,7 @@ only available D+1 09:00 CET.
 
 ## Requirements
 
-- .NET 10 or later
+- .NET 8 or later (the package has builds for `net8.0` and `net10.0`; .NET Framework and .NET Standard are not supported)
 - A Bancontact Pro merchant account (onboarding is a formal application process, not
   self-serve — see [devsupport@bancontact.com](mailto:devsupport@bancontact.com))
 

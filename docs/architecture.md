@@ -270,6 +270,13 @@ long-lived `JwksClient` (the typed-client default would have been transient, and
 have had its own cache). Each fetch takes a fresh `HttpClient` from `BancontactPro.Jwks`, so the
 pooled handlers still rotate; a consumer must not construct a `JwksClient` per call.
 
+## Target frameworks
+
+The package targets `net8.0` and `net10.0`. A .NET 9 app uses the `net8.0` build. .NET Framework and .NET Standard are not targets: the signing code relies on APIs those do not have (PEM and PKCS#8 key import, `DSASignatureFormat`).
+
+- **One code base.** The few differences are small: `System.Buffers.Text.Base64Url` exists from .NET 9, so for `net8.0` the library compiles a stand-in with the same name and signatures (`Compat/Base64Url.cs`, under `#if !NET9_0_OR_GREATER`); `HttpContent.LoadIntoBufferAsync(CancellationToken)` is .NET 9 as well, so `BancontactApiKeyHandler` waits on the token itself on `net8.0`.
+- **Dependencies follow the runtime.** Each target takes the `Microsoft.Extensions.*` line of its own runtime (8.x for `net8.0`, 10.x for `net10.0`), so an app on .NET 8 is not pushed to 10.x.
+- **Tests run on both.** The test project targets both frameworks, so every test, including the one that verifies a real preprod callback, runs against both builds. `Base64UrlTests` runs against the framework's type on `net10.0` and against the stand-in on `net8.0`, so the two must agree.
 ## Notable spec quirks encountered (and how they're handled)
 
 These are things that would produce subtly wrong behavior if assumed rather than verified

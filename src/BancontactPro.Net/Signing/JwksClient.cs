@@ -130,7 +130,7 @@ public sealed class JwksClient : IJwksClient
     /// <summary>The key cache and in-flight refresh of one environment.</summary>
     private sealed class EnvironmentCache
     {
-        public readonly Lock Gate = new();
+        public readonly object Gate = new();
 
         public volatile Dictionary<string, ECDsa> Keys = new();
 
