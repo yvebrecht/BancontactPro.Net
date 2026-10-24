@@ -12,7 +12,10 @@ namespace BancontactPro.Signing;
 /// <remarks>
 /// Per docs/research-notes.md, the signature value is <c>base64url(header) + "." + signature</c>,
 /// where <c>signature = ES256(base64url(header) + "." + base64url(body))</c> — a genuinely
-/// two-segment value, not the usual three-part compact JWS with an empty payload segment.
+/// two-segment value, not the usual three-part compact JWS with an empty payload segment. That is what this
+/// class writes. Bancontact itself writes callbacks as <c>header..signature</c> (the empty payload segment), as its
+/// callback guide documents, so <see cref="TrySplit"/> accepts both forms when verifying. Which form Bancontact
+/// accepts on requests is still to be confirmed (see the open spec-discrepancy issues).
 /// </remarks>
 public static class DetachedJwsSigner
 {
@@ -83,22 +86,24 @@ public static class DetachedJwsSigner
     }
 
     /// <summary>
-    /// Splits a detached JWS into its header/signature segments. Fails if there isn't exactly one
-    /// dot separator (this format never has a third, payload segment — see the type remarks).
+    /// Splits a detached JWS into its header/signature segments. Accepts both <c>header.signature</c> and
+    /// <c>header..signature</c> (RFC 7797 compact form with an empty payload segment). Bancontact sends the
+    /// second form on callbacks, as its callback guide documents, so verifying must accept it; anything else,
+    /// including a non-empty middle segment, is rejected.
     /// </summary>
     internal static bool TrySplit(string detachedJws, out string encodedHeader, out string encodedSignature)
     {
-        var dot = detachedJws.IndexOf('.');
-        if (dot < 0 || detachedJws.IndexOf('.', dot + 1) >= 0)
+        var parts = detachedJws.Split('.');
+        if (parts.Length == 2 || (parts.Length == 3 && parts[1].Length == 0))
         {
-            encodedHeader = "";
-            encodedSignature = "";
-            return false;
+            encodedHeader = parts[0];
+            encodedSignature = parts[^1];
+            return true;
         }
 
-        encodedHeader = detachedJws[..dot];
-        encodedSignature = detachedJws[(dot + 1)..];
-        return true;
+        encodedHeader = "";
+        encodedSignature = "";
+        return false;
     }
 
     internal static byte[] ComputeSigningInput(string encodedHeader, ReadOnlySpan<byte> body) =>
