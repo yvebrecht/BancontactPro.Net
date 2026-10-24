@@ -151,6 +151,38 @@ public class BancontactSignatureVerifierTests
         Assert.Null(claims);
     }
 
+    [Fact]
+    public async Task VerifyAsync_EmptyPayloadSegment_IsAccepted()
+    {
+        // Bancontact's callback guide, and its real callbacks, write the detached JWS as header..signature.
+        using var key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        var jwks = new FakeJwksClient();
+        jwks.Add("bancontact-kid", key);
+        var verifier = new BancontactSignatureVerifier(jwks);
+        var body = """{"paymentId":"p1"}"""u8.ToArray();
+
+        var singleDot = DetachedJwsSigner.Sign(SampleHeader(), body, key);
+        var doubleDot = singleDot.Replace(".", "..");
+        var claims = await verifier.VerifyAsync(doubleDot, body, "/callback");
+
+        Assert.NotNull(claims);
+        Assert.Equal("jti-abc", claims!.RequestId);
+    }
+
+    [Theory]
+    [InlineData("header.signature", true, "header", "signature")]
+    [InlineData("header..signature", true, "header", "signature")]
+    [InlineData("header...signature", false, "", "")]
+    [InlineData("header.payload.signature", false, "", "")]
+    [InlineData("header", false, "", "")]
+    public void TrySplit_AcceptsOneOrTwoDots_AndNothingElse(string value, bool expected, string header, string signature)
+    {
+        var ok = DetachedJwsSigner.TrySplit(value, out var encodedHeader, out var encodedSignature);
+
+        Assert.Equal(expected, ok);
+        Assert.Equal(header, encodedHeader);
+        Assert.Equal(signature, encodedSignature);
+    }
     [Theory]
     [InlineData("not-a-valid-signature-value")]
     [InlineData("one.two.three")]
