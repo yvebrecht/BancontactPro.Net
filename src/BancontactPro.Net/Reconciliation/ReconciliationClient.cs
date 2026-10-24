@@ -7,7 +7,7 @@ namespace BancontactPro.Reconciliation;
 /// <summary>
 /// Default <see cref="IReconciliationClient"/> implementation. Constructed from a plain
 /// <see cref="HttpClient"/> with its <see cref="HttpClient.BaseAddress"/> pointed at the
-/// Bancontact API host — signing is attached upstream via <c>BancontactSigningHandler</c> (#2).
+/// Bancontact API host — signing is attached upstream via <c>BancontactSigningHandler</c>.
 /// </summary>
 public sealed class ReconciliationClient : IReconciliationClient
 {

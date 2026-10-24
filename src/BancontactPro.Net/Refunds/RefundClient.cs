@@ -8,7 +8,7 @@ namespace BancontactPro.Refunds;
 /// Default <see cref="IRefundClient"/> implementation. Constructed from a plain
 /// <see cref="HttpClient"/> with its <see cref="HttpClient.BaseAddress"/> pointed at the
 /// Bancontact Payment API host (refunds are scoped under the payment they refund, not a
-/// top-level resource) — signing is attached upstream via <c>BancontactSigningHandler</c> (#2).
+/// top-level resource) — signing is attached upstream via <c>BancontactSigningHandler</c>.
 /// </summary>
 public sealed class RefundClient : IRefundClient
 {

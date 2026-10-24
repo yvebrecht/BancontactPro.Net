@@ -109,7 +109,7 @@ JOSE header:
 scheme description sets `iss` to `"{Merchant Id}"` (templated — implies the merchant's own ID),
 while Payment and Refund both hardcode `iss: "Payconiq"` literally. Possibly a copy/paste error
 in the reconciliation spec's prose description (it's describing the same claim set almost
-verbatim otherwise). Worth a clarifying question to devsupport before finalizing #2, since
+verbatim otherwise). Worth a clarifying question to devsupport before finalizing the signing code, since
 getting `iss` wrong would make every signature invalid.
 
 The Payment spec's scheme description also literally says "signature of **response** payload"
@@ -163,9 +163,9 @@ Note also: the create-payment response's `status` field is typed as an enum cont
 `PENDING` (i.e. it's always `PENDING` right after creation, modeled as a distinct one-value enum
 in the spec rather than reusing the full enum) — same pattern on the refund side (see below).
 
-## Corrected: the Payment API surface is bigger than issue #3 assumed
+## Corrected: the Payment API surface is bigger than first assumed
 
-v1/issue #3 assumed 4 operations (create/get/list/cancel) with list as `GET /v3/payments`. The
+the first plan assumed 4 operations (create/get/list/cancel) with list as `GET /v3/payments`. The
 **real spec has 8 operations**, and there is no plain list-all endpoint:
 
 | Method | Path | operationId | Notes |
@@ -176,15 +176,15 @@ v1/issue #3 assumed 4 operations (create/get/list/cancel) with list as `GET /v3/
 | `POST` | `/v3/payments/search` | `search` | **This is "list", not a GET.** Body: `{ from, to (date-time, from defaults to yesterday), paymentStatuses[] (enum array), reference }` — all optional filters. Paginated response (`AbstractListResponsePayment` + `details[]` of full payment objects). |
 | `POST` | `/v3/payments/{id}/acknowledge` | `merchant-acknowledge` | Undocumented in v1 entirely. For the VOID-mode flow (`PENDING_MERCHANT_ACKNOWLEDGEMENT` status) — merchant confirms back. Body: `{ currency, amount, reference }`, both `currency`/`amount` required. |
 | `GET` | `/v3/payments/{id}/debtor/refundIban` | `create-refund` *(misleading operationId — it's a GET)* | Returns the debtor's **unmasked** IBAN for issuing a refund. Response: `{ iban }`. This lives in the Payment spec, not the Refund spec, despite the name — needs the payment client, conceptually feeds the refund flow. |
-| `POST` | `/v3/payments/pos` | `create_static_qr_payment` | Undocumented in v1. Creates a **static QR** payment (in-person, POS-style) — a different product line than the online checkout flow issue #3 was scoped around. Worth a scoping decision: in-scope for this wrapper, or explicitly out of scope since research-notes' original framing was "genuine online/e-commerce flow ... not just the in-person QR products"? |
+| `POST` | `/v3/payments/pos` | `create_static_qr_payment` | Undocumented in v1. Creates a **static QR** payment (in-person, POS-style) — a different product line than the online checkout flow the first plan was scoped around. Worth a scoping decision: in-scope for this wrapper, or explicitly out of scope since research-notes' original framing was "genuine online/e-commerce flow ... not just the in-person QR products"? |
 
 Since the whole point of this library is to wrap what the API exposes rather than a
-curated subset, issue #3 should be updated to cover all of these (or `/pos` explicitly
+curated subset, the plan should be updated to cover all of these (or `/pos` explicitly
 deferred with a documented reason) rather than just create/get/search/cancel.
 
 ## Corrected: the QR code URL is a distinct `_links.qrcode`, not `_links.self`
 
-v1/issue #3 assumed `_links.self.href` doubles as the QR code URL. **The spec has both, as
+the first plan assumed `_links.self.href` doubles as the QR code URL. **The spec has both, as
 separate link relations** on the `links` object:
 
 - `self` — the payment resource URL (for polling — not a QR code)
@@ -283,9 +283,9 @@ Matches v1 closely; a few exact field names confirmed from the raw spec:
 - **Discovered, not yet acted on (2026-09-17):** every 2xx/4xx response from the Reconciliation
   API declares its own `Signature` response header — Bancontact signs its own reconciliation
   responses, the same detached-JWS scheme used elsewhere. Neither the Payment nor Refund specs
-  do this for ordinary (non-callback) responses. Not verified by `ReconciliationClient` (#7) —
+  do this for ordinary (non-callback) responses. Not verified by `ReconciliationClient` —
   out of scope for that issue and not requested — but worth a follow-up issue if
-  defense-in-depth response verification is ever wanted, since the machinery from #12/#13
+  defense-in-depth response verification is ever wanted, since the machinery from the callback verification
   (JWKS client + `BancontactSignatureVerifier`) would mostly carry over.
 - ~~Every prose guide page carries a "New payment URLs" banner with no specifics~~ — **resolved
   2026-09-17**, see "Payconiq→Bancontact Pro URL migration" below. The dedicated page wasn't in
@@ -402,7 +402,7 @@ amount is attached separately via the already-implemented `POST /v3/payments/pos
 `posId` invalidates the previous one (see docs/architecture.md's spec-quirks list): the printed
 QR's link never changes, only which pending payment it currently resolves to. None of this is in
 any of the three OpenAPI specs (it's pure URL templating, not an HTTP call), so it was invisible
-to the "verify against the raw spec" pass that scoped issues #2–#7 — it only surfaced once the
+to the "verify against the raw spec" pass that scoped the first implementation issues — it only surfaced once the
 prose guides for the specific products actually onboarded for were read end-to-end. Tracked as a
 new feature: see `BancontactPro.QrCodes.PaymentLinkBuilder`.
 

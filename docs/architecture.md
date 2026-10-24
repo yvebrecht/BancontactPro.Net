@@ -171,7 +171,7 @@ Bancontact publishes on those pages, rather than just checking "it round-trips" 
 only ground truth available for an endpoint-less, pure-string-templating scheme like this one.
 
 This gap wasn't visible from the OpenAPI specs at all (it's not an HTTP operation, so there was
-nothing for the "verify against the raw spec" pass behind issues #2–#7 to find) — it only
+nothing for the "verify against the raw spec" pass behind the first implementation issues to find) — it only
 surfaced from reading the On a Receipt/Top Up/Static QR prose guides directly. See
 [research-notes.md](research-notes.md) for how it was found and the Static QR "location link vs.
 per-transaction amount" distinction it depends on.

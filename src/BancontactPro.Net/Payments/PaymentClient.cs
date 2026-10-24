@@ -8,7 +8,7 @@ namespace BancontactPro.Payments;
 /// Default <see cref="IPaymentClient"/> implementation. Constructed from a plain
 /// <see cref="HttpClient"/> with its <see cref="HttpClient.BaseAddress"/> pointed at the
 /// Bancontact Payment API — signing is attached upstream via
-/// <c>BancontactSigningHandler</c> (see #2), so this type issues ordinary relative-path
+/// <c>BancontactSigningHandler</c>, so this type issues ordinary relative-path
 /// requests and doesn't know anything about JWS itself.
 /// </summary>
 public sealed class PaymentClient : IPaymentClient
