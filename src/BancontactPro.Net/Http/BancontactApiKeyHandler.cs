@@ -29,7 +29,12 @@ public sealed class BancontactApiKeyHandler : DelegatingHandler
         // them so the request carries a Content-Length, as the signed (Refund, Reconciliation) calls do.
         if (request.Content is not null)
         {
+#if NET9_0_OR_GREATER
             await request.Content.LoadIntoBufferAsync(cancellationToken).ConfigureAwait(false);
+#else
+            // The overload that takes a CancellationToken only exists from .NET 9.
+            await request.Content.LoadIntoBufferAsync().WaitAsync(cancellationToken).ConfigureAwait(false);
+#endif
         }
 
         return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
