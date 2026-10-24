@@ -115,11 +115,12 @@ Three layers, each independently testable:
    the environment" below), and the instance is long-lived: never build one per call.
 
 2. **`BancontactSignatureVerifier`** does the actual cryptographic and structural verification:
-   splits the two segments, parses the JOSE header, rejects any `crit` entry it doesn't
+   splits header and signature (`header.signature`, or `header..signature` with the empty payload segment, which is what Bancontact sends on callbacks), parses the JOSE header, rejects any `crit` entry it doesn't
    recognize (a deliberate JWS security requirement — an unrecognized critical extension must
    cause rejection, not silent ignoring), checks the header's `path` claim against the request's
    *actual* path (defends against a validly-signed message being replayed against the wrong
-   route), resolves the signing key via `IJwksClient`, and verifies the signature. It returns the
+   route; Bancontact signs the callback URL the merchant registered, so an absolute http(s) URL in the claim
+   matches when its path equals the received path, and the host is not compared), resolves the signing key via `IJwksClient`, and verifies the signature. It returns the
    parsed claims (as a `JoseHeader`) on success, `null` on any failure — deliberately not an
    exception, since malformed/malicious inbound data is an expected, non-exceptional occurrence
    for anything facing the public internet.

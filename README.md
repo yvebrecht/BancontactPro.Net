@@ -16,12 +16,17 @@ A strongly-typed **.NET 10** client library for [Bancontact Pro](https://docs.ba
 > payment expiry window, and recommended rendering differ. See
 > [docs/getting-started.md](docs/getting-started.md) for details.
 >
-> **Status: functionally complete, not yet verified end-to-end against Bancontact.** Request
-> signing, webhook verification, and all three typed API clients (Payment, Refund,
-> Reconciliation) are implemented and unit-tested, with DI registration wired up. What's
-> missing is a real run against Bancontact's pre-production environment — see
-> [docs/research-notes.md](docs/research-notes.md) for open questions and current status.
-
+> **Status: functionally complete, partly verified against Bancontact's pre-production.** Request
+> signing, webhook verification and all three typed API clients (Payment, Refund, Reconciliation)
+> are implemented and unit-tested, with DI registration wired up. Verified on pre-production:
+> creating and reading a payment, and receiving a real signed callback (verified with Bancontact's
+> published key). Not yet verified: cancel, search and acknowledge, Static QR payments, Refund and
+> Reconciliation (they need a signing key registered with Bancontact), and the scan of self-built
+> QR codes. See
+> [docs/research-notes.md](https://github.com/yvebrecht/BancontactPro.Net/blob/main/docs/research-notes.md)
+> for what was observed and what is still open. To try it by hand, use the
+> [sample web UI](https://github.com/yvebrecht/BancontactPro.SDK.Samples.Net) and its
+> [setup guide](https://github.com/yvebrecht/BancontactPro.SDK.Samples.Net/blob/main/docs/setting-up-the-samples.md).
 ---
 
 ## Why this exists
