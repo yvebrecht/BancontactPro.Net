@@ -497,3 +497,25 @@ webhook secret, no JWS/JWKS). Noted here as a known trade-off, not a recommendat
 (unincorporated associations); Bancontact Pro does. For such a merchant the simpler auth model
 above is moot — Mollie is never a real alternative, regardless of the JWS/JWKS complexity
 trade-off.
+
+## Observed on preprod, 2026-10-24: callbacks and Static QR
+
+Seen with the sample web UI against `merchant.api.preprod.bancontact.net`, one On Display product, and the preprod Bancontact Pay app.
+
+**A real callback** (a payment of 1.00 EUR paid with the always-authorised test card):
+
+- Delivered by `User-Agent: Payconiq Payments/v3`, `Content-Type: application/json`, to the callback URL given on the create call.
+- `Signature` is `header..signature`; the JOSE header has `crit` (`iss`, `iat`, `sub`, `path`, `jti`), `kid`, `typ: JOSE+JSON`, `alg: ES256`,
+  and the claims `https://payconiq.com/iss` (`Payconiq`), `.../iat` (millisecond ISO timestamp, `Z`), `.../sub` (the PPID), `.../path` and `.../jti`.
+- The `path` claim is the registered **callback URL** (`https://host/bancontact/callback`), not a path.
+- The signature verifies with the key `kid` names in `https://jwks.preprod.bancontact.net/` (an ES256 key with an `x5c` chain; the set also holds RS256 keys),
+  over `base64url(header) + "." + base64url(body)`. The other combinations tried (unencoded body, no dot, body only) do not verify.
+- The body is the `merchant-callback` schema; the debtor IBAN is masked (`************7034`).
+- When the response is 401, Bancontact retries in bursts of four attempts about 70 ms apart, repeated about every 28 seconds. The spec's "5 s timeout and 3
+  attempts" and the guide's "15 s timeout and 24 h of retries" (issue #9) do not describe that burst; this run did not last 24 h.
+
+**Payment links on preprod:** `_links.deeplink` is `https://pay.acc.bancontact.net/pay/2/{paymentId}`, `_links.qrcode` is
+`https://qrcodegenerator.api.preprod.bancontact.net/qrcode?c={encoded deeplink}`, and the `GET` response also shows `creditor.callbackUrl`,
+which is the quickest way to see which callback URL Bancontact has for a payment.
+
+**Static QR:** `posId` must match `^[A-Za-z0-9]+$` (at most 36 characters, example `POS00001`); `pos-1` is rejected with `Field posId is invalid`.

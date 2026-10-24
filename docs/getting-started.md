@@ -277,8 +277,11 @@ For every product, `GetAsync`, `SearchAsync`, refunds and reconciliation use the
 product the payment belongs to. For URL-based products, each combination of amount, description
 and reference must be unique, or the QR code can be treated as already paid.
 
-The [sample API](https://github.com/yvebrecht/BancontactPro.SDK.Samples.Net) (separate repository) exposes every call over HTTP,
-one route per library method, for trying these flows against preprod.
+The [samples](https://github.com/yvebrecht/BancontactPro.SDK.Samples.Net) (separate repository) let you try these
+flows against preprod without writing code: a **web UI** (Blazor) that creates a payment, shows the QR code, follows the
+status and shows every call and callback in a debug panel, and a **sample API** that exposes every call over HTTP, one route
+per library method, for Postman. The [setup guide](https://github.com/yvebrecht/BancontactPro.SDK.Samples.Net/blob/main/docs/setting-up-the-samples.md)
+explains the credentials, running it locally, in Docker or in Portainer, and receiving callbacks.
 
 ## 6. Create a payment
 
@@ -381,6 +384,26 @@ Make sure this endpoint reads the **raw** request body — the signature covers 
 Bancontact sent, so any middleware that re-serializes or reformats the body before this handler
 sees it (a JSON model-binder, for instance) will break verification. Reading `request.Body`
 directly, as above, avoids that.
+
+### What a real callback looks like
+
+Checked against a real pre-production callback (2026-10-24), with Bancontact's published key from
+`https://jwks.preprod.bancontact.net/`:
+
+- The `Signature` header is `header..signature`, two dots, as the callback guide documents. The verifier accepts this form
+  and the one-dot form.
+- The signed `path` claim is the **callback URL you registered** (`https://your-host/bancontact/callback`), not just the path.
+  Pass `request.Path` as above: the verifier matches the URL's path against it and does not compare the host, because an
+  application behind a proxy cannot rely on the host it sees.
+- The signing input is `base64url(header) + "." + base64url(body)`, with the body as received.
+- The JOSE header also carries `typ` (`JOSE+JSON`) and `alg` (`ES256`); the five `crit` claims are `iss`, `iat`, `sub`, `path` and `jti`.
+- Bancontact must reach the URL over public HTTPS, and nothing in front of the endpoint may rewrite the path, change the body
+  or demand a login. When a callback is refused, Bancontact retries in short bursts (four attempts within a fraction of a
+  second, repeated about every 28 seconds in the observed run).
+
+To see a callback arrive, use the sample web UI: its debug panel shows the headers, the raw body, the decoded JOSE header and
+whether the signature verified. See the
+[setup guide](https://github.com/yvebrecht/BancontactPro.SDK.Samples.Net/blob/main/docs/setting-up-the-samples.md).
 
 ## 8. Poll as a fallback
 
@@ -546,6 +569,10 @@ if this has aged):
 | `5127 8829 9999 9715` | Always authorized |
 | `5127 8829 9999 9723` | Insufficient funds |
 | `5127 8829 9999 9731` | Card refused by issuer |
+
+To run a whole payment by hand (create it, scan the QR code, pay, watch the callback) without writing code, use the sample web
+UI and follow its
+[setup guide](https://github.com/yvebrecht/BancontactPro.SDK.Samples.Net/blob/main/docs/setting-up-the-samples.md).
 
 ## Error handling summary
 
